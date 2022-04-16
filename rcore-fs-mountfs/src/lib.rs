@@ -186,8 +186,10 @@ impl MNode {
 
     /// If `child` is a child of `self`, return its name.
     pub fn find_name_by_child(&self, child: &Arc<MNode>) -> Result<String> {
-        for index in 0.. {
-            let name = self.inode.get_entry(index)?;
+        let mut offset: usize = 0;
+        loop {
+            let (next_offset, name) = self.inode.get_entry(offset)?;
+            offset = next_offset;
             match name.as_ref() {
                 "." | ".." => {}
                 _ => {
@@ -293,12 +295,12 @@ impl INode for MNode {
         Ok(self.find(false, name)?)
     }
 
-    fn get_entry(&self, id: usize) -> Result<String> {
-        self.inode.get_entry(id)
+    fn get_entry(&self, offset: usize) -> Result<(usize, String)> {
+        self.inode.get_entry(offset)
     }
 
-    fn get_entry_with_metadata(&self, id: usize) -> Result<(Metadata, String)> {
-        self.inode.get_entry_with_metadata(id)
+    fn get_entry_with_metadata(&self, offset: usize) -> Result<(usize, Metadata, String)> {
+        self.inode.get_entry_with_metadata(offset)
     }
 
     fn io_control(&self, cmd: u32, data: usize) -> Result<usize> {

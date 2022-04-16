@@ -1,5 +1,5 @@
 use crate::dev::DevError;
-use alloc::{boxed::Box, string::String, sync::Arc, vec::Vec};
+use alloc::{boxed::Box, string::String, sync::Arc, vec, vec::Vec};
 use core::any::Any;
 use core::fmt;
 use core::future::Future;
@@ -87,17 +87,19 @@ pub trait INode: Any + Sync + Send {
         Err(FsError::NotSupported)
     }
 
-    /// Get the name of directory entry
-    fn get_entry(&self, _id: usize) -> Result<String> {
+    /// Get the name of directory entry.
+    /// return name and next entry offset.
+    fn get_entry(&self, offset: usize) -> Result<(usize, String)> {
         Err(FsError::NotSupported)
     }
 
     /// Get the name of directory entry with metadata
-    fn get_entry_with_metadata(&self, id: usize) -> Result<(Metadata, String)> {
+    /// return next entry offset, metadata and name.
+    fn get_entry_with_metadata(&self, offset: usize) -> Result<(usize, Metadata, String)> {
         // a default and slow implementation
-        let name = self.get_entry(id)?;
+        let (next_offset, name) = self.get_entry(offset)?;
         let entry = self.find(&name)?;
-        Ok((entry.metadata()?, name))
+        Ok((next_offset, entry.metadata()?, name))
     }
 
     /// Control device
@@ -132,11 +134,18 @@ impl dyn INode {
         if info.type_ != FileType::Dir {
             return Err(FsError::NotDir);
         }
-        Ok((0..)
-            .map(|i| self.get_entry(i))
-            .take_while(|result| result.is_ok())
-            .filter_map(|result| result.ok())
-            .collect())
+
+        let mut offset = 0;
+        let mut names = vec![];
+        loop {
+            if let Ok((next_offset, name)) = self.get_entry(offset) {
+                names.push(name);
+                offset = next_offset;
+            } else {
+                break;
+            }
+        }
+        return Ok(names);
     }
 
     /// Lookup path from current INode, and do not follow symlinks

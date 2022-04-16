@@ -202,14 +202,15 @@ impl INode for HNode {
         }
     }
 
-    fn get_entry(&self, id: usize) -> Result<String> {
+    fn get_entry(&self, offset: usize) -> Result<(usize, String)> {
         if self.path.is_dir() {
             self.path
                 .read_dir()?
-                .nth(id)
+                .nth(offset)
                 .ok_or(FsError::EntryNotFound)??
                 .file_name()
                 .into_string()
+                .map(|name| (offset + 1, name))
                 .map_err(|_| FsError::InvalidParam)
         } else {
             Err(FsError::NotDir)

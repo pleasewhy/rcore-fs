@@ -286,18 +286,18 @@ impl INode for LockedINode {
         }
     }
 
-    fn get_entry(&self, id: usize) -> Result<String> {
+    fn get_entry(&self, offset: usize) -> Result<(usize, String)> {
         let file = self.0.read();
         if file.extra.type_ != FileType::Dir {
             return Err(FsError::NotDir);
         }
 
-        match id {
-            0 => Ok(String::from(".")),
-            1 => Ok(String::from("..")),
+        match offset {
+            0 => Ok((1, String::from("."))),
+            1 => Ok((2, String::from(".."))),
             i => {
                 if let Some(s) = file.children.keys().nth(i - 2) {
-                    Ok(s.to_string())
+                    Ok((offset + 1, s.to_string()))
                 } else {
                     Err(FsError::EntryNotFound)
                 }

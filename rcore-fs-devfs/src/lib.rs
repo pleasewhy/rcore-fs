@@ -210,13 +210,13 @@ impl INode for DevINode {
         }
     }
 
-    fn get_entry(&self, id: usize) -> Result<String> {
-        match id {
-            0 => Ok(String::from(".")),
-            1 => Ok(String::from("..")),
+    fn get_entry(&self, offset: usize) -> Result<(usize, String)> {
+        match offset {
+            0 => Ok((1, String::from("."))),
+            1 => Ok((2, String::from(".."))),
             i => {
                 if let Some(s) = self.children.read().keys().nth(i - 2) {
-                    Ok(s.to_string())
+                    Ok((offset + 1, s.to_string()))
                 } else {
                     Err(FsError::EntryNotFound)
                 }

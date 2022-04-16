@@ -36,7 +36,10 @@ impl File {
         self.inode.metadata()
     }
 
-    pub fn get_entry(&self, id: usize) -> Result<String> {
-        self.inode.get_entry(id)
+    pub fn get_entry(&mut self) -> Result<String> {
+        assert!(self.readable);
+        let (next_offset, name) = self.inode.get_entry(self.offset)?;
+        self.offset = next_offset;
+        return Ok(name);
     }
 }
